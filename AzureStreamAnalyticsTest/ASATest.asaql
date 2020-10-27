@@ -78,6 +78,15 @@ from
     on n.deviceid = n2.deviceid and n2.type = n.smaller AND DATEDIFF(second, n2, n) BETWEEN 0 AND 0 and n.ax = n2.ax 
 ) 
 select 
-    * 
+case when larger='temp' then av.date else smaller_av.date end as temp_date,
+case when larger='temp' then av.hour else smaller_av.hour end as temp_hour,
+case when larger='temp' then av.second else smaller_av.second end as temp_second,
+case when larger='temp' then av.temperature else smaller_av.temperature end as temp_temperature,
+case when larger='air' then av.date else smaller_av.date end as air_date,
+case when larger='air' then av.hour else smaller_av.hour end as air_hour,
+case when larger='air' then av.second else smaller_av.second end as air_second,
+case when larger='air' then av.element else smaller_av.element end as air_element,
+case when larger='air' then av.particulate else smaller_av.particulate end as air_particulate,
+deviceid
 from 
     reqd_join 
