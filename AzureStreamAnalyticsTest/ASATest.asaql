@@ -1,56 +1,83 @@
-
-with temp_q as (
-	SELECT
-		temp_sensor.ArrayValue  as av ,
-		temp_sensor.ArrayIndex  as ax,
-		e.siteid,
-		e.deviceid,
-		'temp' as type
-		FROM
-		Input1 e 
-		outer apply GetArrayElements(	e.sensor_readings.readings.temperature_readings) as temp_sensor
-	),
-
-air_q as (
-	SELECT
-	temp_sensor.ArrayValue as av ,
-	temp_sensor.ArrayIndex as ax,
-	e.siteid,
-	e.deviceid,
-	'air' as type
-	FROM
-	Input1 e 
-	outer apply GetArrayElements(	e.sensor_readings.readings.air_pollution_readings) as temp_sensor
-),
-tot_q as (
-	select * from temp_q
-	union
-	SELECT * from air_q
-)
-,processed_q as (
-select case when p.temp_count>=p.air_count then 'temp' else 'air' end larger,
-case when p.temp_count<p.air_count then 'temp' else 'air' end smaller,
-* 
-from (
-sELECT t.deviceid,tot_q.ax,tot_q.type,tot_q.av
-,GetArrayLength(t.sensor_readings.readings.temperature_readings) as temp_count
-,GetArrayLength(t.sensor_readings.readings.air_pollution_readings) as air_count
-from Input1 t
-left outer join tot_q
-on tot_q.deviceid=t.deviceid 
-AND DATEDIFF(minute,t,tot_q) BETWEEN 0 AND 0 )p)
-,
-first_join as (
-select * from processed_q
-where type=larger)
-,
-reqd_join as (
-select n.smaller,n.larger,n2.type,n.deviceid,n.ax,n.av,n2.ax as smaller_ax,n2.av as smaller_av from first_join n
-left outer join tot_q n2
-on n.deviceid=n2.deviceid and n2.type=n.smaller
-AND DATEDIFF(minute,n2,n) BETWEEN 0 AND 0 
-and n.ax=n2.ax)
-
-select * from reqd_join
-
-
+with 
+temp_q as(
+SELECT 
+    temp_sensor.ArrayValue as av,
+    temp_sensor.ArrayIndex as ax,
+    e.siteid,
+    e.deviceid,
+    'temp' as type 
+FROM 
+    Input1 e 
+    outer apply 
+    GetArrayElements(e.sensor_readings.readings.temperature_readings) as temp_sensor 
+), 
+air_q as(
+SELECT 
+    temp_sensor.ArrayValue as av,
+    temp_sensor.ArrayIndex as ax,
+    e.siteid,
+    e.deviceid,
+    'air' as type 
+FROM 
+    Input1 e 
+    outer apply 
+    GetArrayElements(e.sensor_readings.readings.air_pollution_readings) as temp_sensor 
+), 
+tot_q as(
+select 
+    * 
+from 
+    temp_q 
+union 
+SELECT 
+    * 
+from 
+    air_q 
+), 
+processed_q as(
+select 
+    case when p.temp_count > = p.air_count then 'temp' else 'air' end larger,
+    case when p.temp_count < p.air_count then 'temp' else 'air' end smaller,
+    * 
+from 
+    (
+    SELECT 
+        t.deviceid,
+        tot_q.ax,
+        tot_q.type,
+        tot_q.av,
+        GetArrayLength(t.sensor_readings.readings.temperature_readings) as temp_count,
+        GetArrayLength(t.sensor_readings.readings.air_pollution_readings) as air_count 
+    from 
+        Input1 t 
+        left outer join tot_q 
+        on tot_q.deviceid = t.deviceid AND DATEDIFF(second, t, tot_q) BETWEEN 0 AND 0 
+    ) p 
+), 
+first_join as(
+select 
+    * 
+from 
+    processed_q 
+where 
+    type = larger 
+), 
+reqd_join as(
+select 
+    n.smaller,
+    n.larger,
+    n2.type,
+    n.deviceid,
+    n.ax,
+    n.av,
+    n2.ax as smaller_ax,
+    n2.av as smaller_av 
+from 
+    first_join n 
+    left outer join tot_q n2 
+    on n.deviceid = n2.deviceid and n2.type = n.smaller AND DATEDIFF(second, n2, n) BETWEEN 0 AND 0 and n.ax = n2.ax 
+) 
+select 
+    * 
+from 
+    reqd_join 
