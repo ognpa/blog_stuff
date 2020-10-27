@@ -1,70 +1,56 @@
 
 with temp_q as (
-SELECT
-	temp_sensor.ArrayValue  as temp_v,
-	temp_sensor.ArrayIndex as temp_ix,
+	SELECT
+		temp_sensor.ArrayValue  as av ,
+		temp_sensor.ArrayIndex  as ax,
+		e.siteid,
+		e.deviceid,
+		'temp' as type
+		FROM
+		Input1 e 
+		outer apply GetArrayElements(	e.sensor_readings.readings.temperature_readings) as temp_sensor
+	),
+
+air_q as (
+	SELECT
+	temp_sensor.ArrayValue as av ,
+	temp_sensor.ArrayIndex as ax,
 	e.siteid,
 	e.deviceid,
-	'temp' as type
+	'air' as type
 	FROM
 	Input1 e 
-	cross apply GetArrayElements(	e.sensor_readings.readings.temperature_readings) as temp_sensor
-), reqd_output as (
-select 
-a.ArrayIndex as air_ix,
-a.ArrayValue as air_v,
-p.temp_ix,
-p.siteid,
-p.deviceid ,
-p.temp_ct,
-p.air_ct,
-p.temp_v
+	outer apply GetArrayElements(	e.sensor_readings.readings.air_pollution_readings) as temp_sensor
+),
+tot_q as (
+	select * from temp_q
+	union
+	SELECT * from air_q
+)
+,processed_q as (
+select case when p.temp_count>=p.air_count then 'temp' else 'air' end larger,
+case when p.temp_count<p.air_count then 'temp' else 'air' end smaller,
+* 
 from (
+sELECT t.deviceid,tot_q.ax,tot_q.type,tot_q.av
+,GetArrayLength(t.sensor_readings.readings.temperature_readings) as temp_count
+,GetArrayLength(t.sensor_readings.readings.air_pollution_readings) as air_count
+from Input1 t
+left outer join tot_q
+on tot_q.deviceid=t.deviceid 
+AND DATEDIFF(minute,t,tot_q) BETWEEN 0 AND 0 )p)
+,
+first_join as (
+select * from processed_q
+where type=larger)
+,
+reqd_join as (
+select n.smaller,n.larger,n2.type,n.deviceid,n.ax,n.av,n2.ax as smaller_ax,n2.av as smaller_av from first_join n
+left outer join tot_q n2
+on n.deviceid=n2.deviceid and n2.type=n.smaller
+AND DATEDIFF(minute,n2,n) BETWEEN 0 AND 0 
+and n.ax=n2.ax)
 
-select 
-e.deviceId,
-e.siteid,
-t.temp_ix,
-t.temp_v,
-GetArrayLength(e.sensor_readings.readings.temperature_readings) as temp_ct,
-GetArrayLength(e.sensor_readings.readings.air_pollution_readings) as air_ct,
-e.sensor_readings.readings.air_pollution_readings as air_pollution
-from Input1 e
-left join temp_q t
-ON  t.deviceId = e.deviceId 
-AND DATEDIFF(minute,e,t) BETWEEN 0 AND 0)p
-cross apply GetArrayElements(p.air_pollution) as a),
-processed_output as (
-
-select air_ix,temp_ix,siteid,deviceid ,air_v,temp_v from reqd_output
-where air_ix=temp_ix
-union
-select
-case when air_ct<temp_ct then NULL else air_ix end as air_ix,
-case when air_ct>temp_ct then NULL else temp_ix end as temp_ix,
-siteid,
-deviceid,
-case when air_ct<temp_ct then NULL else air_v end as air_v,
-case when air_ct>temp_ct then NULL else temp_v end as temp_v
-
-from reqd_output
-where air_ix!=temp_ix)
-
-select 
-air_ix,
-temp_ix,
-air_v.date as air_sensor_date,
-air_v.hour as air_sensor_hour,
-air_v.second as air_sensor_second,
-air_v.element as air_sensor_element,
-air_v.particulate as air_sensor_particulate,
-temp_v.date as temp_sensor_date,
-temp_v.hour as temp_sensor_hour,
-temp_v.second as temp_v_second,
-temp_v.temperature as temp_v_temperature ,
-siteid,
-deviceid
-
-from processed_output
+select * from reqd_join
 
 
