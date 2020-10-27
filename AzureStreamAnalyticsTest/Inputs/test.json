@@ -1,0 +1,35 @@
+{
+    "sensor_readings": {
+        "readings":{
+        "temperature_readings": [
+            {
+                "date": "02-02-2020",
+                "hour": "12",
+                "second": "00",
+                "temperature": "22.12C"
+            }
+        ]
+    
+,
+    "air_pollution_readings": 
+        [
+            {
+                "date": "02-02-2020",
+                "hour": "12",
+                "second": "00",
+                "element":"o3",
+                "particulate": "2.2"
+            },
+            {
+                "date": "02-02-2020",
+                "hour": "13",
+                "second": "00",
+                "element":"o3",
+                "particulate": "2.1"
+            }
+        ]}
+    }
+    ,
+    "siteid": "a1234566",
+    "deviceid": "2343434"
+}

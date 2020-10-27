@@ -1,0 +1,14 @@
+{
+    "name": "AzureStreamAnalyticsTest1",
+    "startFile": "ASATest.asaql",
+    "configurations": [
+        {
+            "filePath": "JobConfig.json",
+            "subType": "JobConfig"
+        },
+        {
+            "filePath": "Inputs/Local_Input1.json",
+            "subType": "InputMock"
+        }
+    ]
+}
