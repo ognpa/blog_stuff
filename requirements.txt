@@ -1,3 +1,5 @@
 voila
 numpy 
 matplotlib
+fastai
+fastbook
