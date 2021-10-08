@@ -3,3 +3,4 @@ numpy
 matplotlib
 fastai
 fastbook
+ipywidgets
